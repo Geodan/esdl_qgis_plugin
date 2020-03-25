@@ -16,7 +16,7 @@ from PyQt5.QtWidgets import QAction, QMessageBox, QFileDialog
 from qgis.core import QgsProject
 
 from .esdl import esdl_parser
-from .gis import create_layer
+from .gis import create_layer, create_port_layer
 
 
 def classFactory(iface):
@@ -44,10 +44,12 @@ class ESDLPlugin:
         dialog.setNameFilter("*.esdl *.ESDL")
         if dialog.exec_():
             filename = dialog.selectedFiles()[0]
-            asset_dict = esdl_parser(filename)
+            assets, asset_dict = esdl_parser(filename)
             for t in asset_dict:
                 vlayer = create_layer(t, asset_dict[t])
                 self.project.addMapLayer(vlayer)
+            portlayer = create_port_layer(assets)
+            self.project.addMapLayer(portlayer)
         
 
             

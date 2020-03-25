@@ -1,9 +1,9 @@
 
 from PyQt5.QtCore import QVariant
-from qgis.core import QgsVectorLayer, QgsField, QgsFeature, QgsGeometry, QgsPointXY
+from qgis.core import QgsVectorLayer, QgsField, QgsFeature, QgsGeometry, QgsPointXY, QgsLineSymbol
 
 
-def create_feature(asset):
+def create_feature(asset, attributes):
     """
     Helper function to create a QgsFeature from an ESDL asset.
     """
@@ -15,9 +15,83 @@ def create_feature(asset):
         fet.setGeometry( QgsGeometry.fromPolylineXY( [QgsPointXY(p.lon, p.lat) for p in geom.point] ) )
     elif type(geom).__name__ == "Polygon":
         fet.setGeometry( QgsGeometry.fromPolygonXY( [[QgsPointXY(p.lon, p.lat) for p in geom.exterior.point]] ) )
-    fet.setAttributes([asset.id, type(asset).__name__, asset.area.id])
+    fet.setAttributes([getattr(asset, at, None) for at in attributes])
     return fet
 
+
+def get_port_geom(geom1, geom2):
+    lon1, lat1 = None, None
+    if hasattr(geom1, 'lon'):
+        lon1, lat1 = geom1.lon, geom1.lat
+    elif hasattr(geom1, point):
+        lon1, lat1 = geom1.point[0].lon, geom1.point[0].lat
+    elif hasattr(geom1, exterior) and hasattr(geom1.exterior, point):
+        lon1, lat1 = geom1.exterior.point[0].lon, geom1.exterior.point[0].lat
+    lon2, lat2 = None, None
+    if hasattr(geom2, 'lon'):
+        lon2, lat2 = geom2.lon, geom2.lat
+    elif hasattr(geom2, point):
+        lon2, lat2 = geom2.point[0].lon, geom2.point[0].lat
+    elif hasattr(geom2, exterior) and hasattr(geom2.exterior, point):
+        lon2, lat2 = geom2.exterior.point[0].lon, geom2.exterior.point[0].lat
+    return [lon1, lat1, lon2, lat2]
+    
+
+def get_port_connection(p):
+    ports = []
+    if type(p).__name__ == 'InPort' and hasattr(p, 'connectedTo'):
+        if hasattr(p.connectedTo, '__iter__'):
+            for pct in p.connectedTo:
+                ports.append([p.id, p.energyasset.id, pct.id, pct.energyasset.id,
+                              get_port_geom(p.energyasset.geometry, pct.energyasset.geometry)])
+        elif hasattr(p.connectedTo, 'energyasset'):
+            pct = p.connectedTo
+            ports.append([p.id, p.energyasset.id, pct.id, pct.energyasset.id,
+                          get_port_geom(p.energyasset.geometry, pct.energyasset.geometry)])
+    return ports
+
+
+def create_port_layer(assets):
+    ports = []
+    for asset in assets:
+        if hasattr(asset, "port"):
+            if hasattr(asset.port, '__iter__'):
+                for p in asset.port:
+                    ports += get_port_connection(p)
+            else:
+                ports += get_port_connection(asset.port)
+    
+    vl = QgsVectorLayer("Linestring?crs=EPSG:4326", "Ports", "memory")
+    pr = vl.dataProvider()
+    vl.startEditing()
+                
+    # add fields
+    pr.addAttributes([ 
+        QgsField('inPort_id', QVariant.String),
+        QgsField('inAsset_id', QVariant.String),
+        QgsField('outPort_id', QVariant.String),
+        QgsField('outAsset_id', QVariant.String)
+    ])
+                
+    # add features
+    fets = []
+    for pc in ports:
+        fet = QgsFeature()
+        fet.setAttributes(pc[:4])
+        if not None in pc[4]:
+            fet.setGeometry( QgsGeometry.fromPolylineXY( [QgsPointXY(pc[4][0], pc[4][1]), QgsPointXY(pc[4][2], pc[4][3])] ) )
+        fets.append(fet)
+    pr.addFeatures(fets)
+    
+    vl.commitChanges()
+    
+    symbol = QgsLineSymbol.createSimple({'line_style': 'dash', 'color': 'grey'})
+    vl.renderer().setSymbol(symbol)
+    #vl.triggerRepaint()
+                
+    return vl
+    
+    
 
 def create_layer(type_name, assets):
     # determine geometry type, default is Point
@@ -37,14 +111,15 @@ def create_layer(type_name, assets):
     vl.startEditing()
                 
     # add fields
+    type2Qtype = {int: QVariant.Int, str: QVariant.String, 
+                  float: QVariant.Double, bool: QVariant.Bool}
+    attributes = [at for at in dir(assets[0]) if type(getattr(assets[0], at)) in type2Qtype]
     pr.addAttributes([ 
-        QgsField("id", QVariant.String),
-        QgsField("type", QVariant.String),
-        QgsField("area_id",  QVariant.String)
+        QgsField(at, type2Qtype.get(type(getattr(assets[0], at)))) for at in attributes
     ])
                 
     # add features
-    fets = [create_feature(a) for a in assets]
+    fets = [create_feature(a, attributes) for a in assets]
     pr.addFeatures(fets)
                 
     # Commit changes

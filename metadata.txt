@@ -7,5 +7,5 @@ qgisMinimumVersion=3.0
 author=Daniel Muysken
 email=dmuysken@live.nl
 repository=https://github.com/Geodan/esdl_qgis_plugin
-
+tracker=none
 

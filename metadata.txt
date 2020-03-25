@@ -1,0 +1,10 @@
+[general]
+name=ESDL loader
+description=Load an ESDL file in Qgis
+about=Load an ESDL file in Qgis
+version=1.0
+qgisMinimumVersion=3.0
+author=Daniel Muysken
+email=dmuysken@live.nl
+repository=none
+

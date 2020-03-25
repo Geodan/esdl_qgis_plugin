@@ -12,9 +12,8 @@
 import os 
 import pip
 
-from PyQt5.QtCore import QVariant
 from PyQt5.QtWidgets import QAction, QMessageBox, QFileDialog
-from qgis.core import QgsProject, QgsVectorLayer, QgsField, QgsFeature, QgsGeometry, QgsPointXY, QgsCategorizedSymbolRenderer
+from qgis.core import QgsProject
 
 from .esdl import esdl_parser
 from .gis import create_layer

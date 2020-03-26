@@ -20,25 +20,45 @@ from .gis import create_layer, create_port_layer
 
 
 def classFactory(iface):
+    """
+    Function that is called by QGIS. It creates the plugin.
+    """
     return ESDLPlugin(iface)
 
 
 class ESDLPlugin:
+    """
+    Basic QGIS plugin implementation.
+    """
     def __init__(self, iface):
+        """
+        Initiates the plugin by coupling it to the QGIS interface and
+        create a project.
+        """
         self.iface = iface
         self.project = QgsProject.instance()
 
     def initGui(self):
+        """
+        Creates the button in the toolbar.
+        """
         self.action = QAction('Load ESDL', self.iface.mainWindow())
         self.action.triggered.connect(self.run)
         self.iface.addToolBarIcon(self.action)
 
     def unload(self):
+        """
+        Removes the icon from the toolbar if the plugin is deactivated.
+        """
         self.iface.removeToolBarIcon(self.action)
         del self.action
 
     def run(self):
-        #QMessageBox.information(None, 'Load ESDL', 'Upload an ESDL file')
+        """
+        Main function of the plugin.
+        Opens file dialog, parses the selected ESDL file, 
+        puts the assets in layers and adds them to the project.
+        """
         dialog = QFileDialog(None)
         dialog.setFileMode(QFileDialog.ExistingFile)
         dialog.setNameFilter("*.esdl *.ESDL")

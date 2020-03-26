@@ -5,6 +5,10 @@ from pyecore.resources.resource import HttpURI
 
 
 def get_energysystem_from_esdl(fname):
+    """
+    Helper function for esdl_parser. It takes the name of an ESDL file 
+    and returns the EnergySystem object (root of the ESDL tree).
+    """
     rset = ResourceSet()
     resource = rset.get_resource(HttpURI('https://raw.githubusercontent.com/EnergyTransition/ESDL/master/esdl/model/esdl.ecore'))
     esdl_model = resource.contents[0]
@@ -14,6 +18,10 @@ def get_energysystem_from_esdl(fname):
 
 
 def get_assets(x):
+    """
+    Helper function for esdl_parser. It recursively traverses
+    an ESDL tree and returns a list with all assets in the tree.
+    """
     assets = []
     if hasattr(x, 'asset'):
         if hasattr(x.asset, '__iter__'):
@@ -31,6 +39,10 @@ def get_assets(x):
 
 
 def esdl_parser(fname):
+    """
+    Parses an ESDL file and returns all energy assets within that file,
+    both ordered per class in a dictionary and as a list.
+    """
     es = get_energysystem_from_esdl(fname)
     assets = get_assets(es.instance[0])
     asset_dict = {}

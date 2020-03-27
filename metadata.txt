@@ -1,11 +1,11 @@
 [general]
 name=ESDL loader
 description=Load an ESDL file in Qgis
-about=Load an ESDL file in Qgis
+about=Energy System Description Language (ESDL) is an xml based format used to describe energy systems (see https://energytransition.gitbook.io/esdl/ for details).
 version=1.0
 qgisMinimumVersion=3.0
 author=Daniel Muysken
 email=dmuysken@live.nl
 repository=https://github.com/Geodan/esdl_qgis_plugin
-tracker=none
+tracker=https://github.com/Geodan/esdl_qgis_plugin/issues
 

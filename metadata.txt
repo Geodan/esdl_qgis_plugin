@@ -1,7 +1,7 @@
 [general]
 name=ESDL loader
 description=Load an ESDL file in Qgis
-about=Energy System Description Language (ESDL) is an xml based format used to describe energy systems (see https://energytransition.gitbook.io/esdl/ for details).
+about=Energy System Description Language (ESDL) is an xml based format used to describe energy systems (see https://energytransition.gitbook.io/esdl/ for details). Requires pyecore library to be installed.
 version=1.0
 qgisMinimumVersion=3.0
 author=Daniel Muysken

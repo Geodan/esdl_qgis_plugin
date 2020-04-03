@@ -82,7 +82,7 @@ def get_port_geom(geom1, geom2):
     if hasattr(geom2, 'lon'):
         lon2, lat2 = geom2.lon, geom2.lat
     elif hasattr(geom2, 'point'):
-        lon2, lat2 = geom2.point[0].lon, geom2.point[0].lat
+        lon2, lat2 = geom2.point[-1].lon, geom2.point[-1].lat
     elif hasattr(geom2, 'exterior') and hasattr(geom2.exterior, 'point'):
         lon2, lat2 = geom2.exterior.point[0].lon, geom2.exterior.point[0].lat
     return [lon1, lat1, lon2, lat2]

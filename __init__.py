@@ -37,6 +37,7 @@ class ESDLPlugin:
         """
         self.iface = iface
         self.project = QgsProject.instance()
+        self.root = self.project.layerTreeRoot()
 
     def initGui(self):
         """
@@ -64,12 +65,17 @@ class ESDLPlugin:
         dialog.setNameFilter("*.esdl *.ESDL")
         if dialog.exec_():
             filename = dialog.selectedFiles()[0]
-            assets, asset_dict = esdl_parser(filename)
-            for t in asset_dict:
-                vlayer = create_layer(t, asset_dict[t])
-                self.project.addMapLayer(vlayer)
-            portlayer = create_port_layer(assets)
-            self.project.addMapLayer(portlayer)
+            main_group = self.root.insertGroup(0, filename)
+            asset_struct = esdl_parser(filename)
+            for instance_name, assets, asset_dict in asset_struct:
+                group = main_group.addGroup(instance_name)
+                for t in asset_dict:
+                    vlayer = create_layer(t, asset_dict[t])
+                    self.project.addMapLayer(vlayer, False)
+                    group.addLayer(vlayer)
+                portlayer = create_port_layer(assets)
+                self.project.addMapLayer(portlayer, False)
+                group.addLayer(portlayer)
         
 
             

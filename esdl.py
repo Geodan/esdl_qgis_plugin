@@ -1,4 +1,7 @@
 
+import sys 
+sys.setrecursionlimit(5000)
+
 from pyecore.resources import ResourceSet, URI
 from pyecore.utils import DynamicEPackage
 from pyecore.resources.resource import HttpURI
@@ -44,13 +47,16 @@ def esdl_parser(fname):
     both ordered per class in a dictionary and as a list.
     """
     es = get_energysystem_from_esdl(fname)
-    assets = get_assets(es.instance[0])
-    asset_dict = {}
-    for a in assets:
-        t = type(a).__name__
-        if t in asset_dict:
-            asset_dict[t].append(a)
-        else:
-            asset_dict[t] = [a]
-    return assets, asset_dict
+    asset_struct = []
+    for inst in es.instance:
+        assets = get_assets(inst)
+        asset_dict = {}
+        for a in assets:
+            t = type(a).__name__
+            if t in asset_dict:
+                asset_dict[t].append(a)
+            else:
+                asset_dict[t] = [a]
+        asset_struct.append((inst.name, assets, asset_dict))
+    return asset_struct
 

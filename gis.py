@@ -3,11 +3,42 @@ from PyQt5.QtCore import QVariant
 from qgis.core import QgsVectorLayer, QgsField, QgsFeature, QgsGeometry, QgsPointXY, QgsLineSymbol
 
 
+def get_profile_from_port(port):
+    """
+    Function that takes an ESDL port object of an asset and
+    puts main attributes into QGIS attributes of the asset.
+    
+    Not working in all cases...
+    """
+    inPortProfileValue, inPortProfileUnit = None, None
+    try:
+        if hasattr(port, '__iter__'):
+            for p in port:
+                if type(p).__name__ == 'InPort' and hasattr(p, 'profile'):
+                    inPortProfileValue = p.profile[0].value
+                    inPortProfileUnit = (
+                        str(p.profile[0].profileQuantityAndUnit.multiplier) + 
+                        str(p.profile[0].profileQuantityAndUnit.unit) + "/" + 
+                        str(p.profile[0].profileQuantityAndUnit.perTimeUnit)
+                    )
+        elif type(port).__name__ == 'InPort' and hasattr(port, 'profile'):
+            inPortProfileValue = port.profile[0].value
+            inPortProfileUnit = (
+                str(port.profile[0].profileQuantityAndUnit.multiplier) + 
+                str(port.profile[0].profileQuantityAndUnit.unit) + "/" + 
+                str(port.profile[0].profileQuantityAndUnit.perTimeUnit)
+            )
+    except (AttributeError, IndexError) as error:
+        pass
+    return [inPortProfileValue, inPortProfileUnit]
+
+
 def create_feature(asset, attributes):
     """
     Helper function to create a QgsFeature from an ESDL asset.
     """
     fet = QgsFeature()
+    
     geom = asset.geometry
     if type(geom).__name__ == "Point":
         fet.setGeometry( QgsGeometry.fromPointXY(QgsPointXY(geom.lon, geom.lat)) )
@@ -15,7 +46,12 @@ def create_feature(asset, attributes):
         fet.setGeometry( QgsGeometry.fromPolylineXY( [QgsPointXY(p.lon, p.lat) for p in geom.point] ) )
     elif type(geom).__name__ == "Polygon":
         fet.setGeometry( QgsGeometry.fromPolygonXY( [[QgsPointXY(p.lon, p.lat) for p in geom.exterior.point]] ) )
-    fet.setAttributes([getattr(asset, at, None) for at in attributes])
+        
+    attribute_values = [getattr(asset, at, None) for at in attributes]
+    if hasattr(asset, "port"):
+        attribute_values += get_profile_from_port(asset.port)
+    fet.setAttributes(attribute_values)
+    
     return fet
 
 
@@ -46,9 +82,11 @@ def create_layer(type_name, assets):
     type2Qtype = {int: QVariant.Int, str: QVariant.String, 
                   float: QVariant.Double, bool: QVariant.Bool}
     attributes = [at for at in dir(assets[0]) if type(getattr(assets[0], at)) in type2Qtype]
-    pr.addAttributes([ 
-        QgsField(at, type2Qtype.get(type(getattr(assets[0], at)))) for at in attributes
-    ])
+    Qattributes = [ QgsField(at, type2Qtype.get(type(getattr(assets[0], at)))) for at in attributes ]
+    if hasattr(assets[0], "port"):
+        Qattributes.append(QgsField('inPortProfileValue', QVariant.Double))
+        Qattributes.append(QgsField('inPortProfileUnit', QVariant.String))
+    pr.addAttributes(Qattributes)
                 
     # add features
     fets = [create_feature(a, attributes) for a in assets]

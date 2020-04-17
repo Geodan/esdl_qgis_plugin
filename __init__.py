@@ -9,10 +9,11 @@
 # (at your option) any later version.
 #---------------------------------------------------------------------
 
-import os 
-import pip
+import os
+from pathlib import Path
 
 from PyQt5.QtWidgets import QAction, QMessageBox, QFileDialog
+from PyQt5.QtGui import QIcon
 from qgis.core import QgsProject
 
 from .esdl import esdl_parser
@@ -38,13 +39,19 @@ class ESDLPlugin:
         self.iface = iface
         self.project = QgsProject.instance()
         self.root = self.project.layerTreeRoot()
+        self.wd = Path(__file__).parent.absolute()
 
     def initGui(self):
         """
         Creates the button in the toolbar.
         """
-        self.action = QAction('Load ESDL', self.iface.mainWindow())
+        icon = QIcon(os.path.join(self.wd, 'esdl.png'))
+        #icon = QIcon(':/plugins/ESDL_loader/esdl.png')
+        self.action = QAction(icon, 'Load ESDL...', self.iface.mainWindow())
         self.action.triggered.connect(self.run)
+        self.action.setWhatsThis("Load an ESDL-file as QGis layers")
+        self.action.setStatusTip("Load ESDL")
+        self.iface.addPluginToMenu("&Load ESDL-file...", self.action)
         self.iface.addToolBarIcon(self.action)
 
     def unload(self):
@@ -52,6 +59,7 @@ class ESDLPlugin:
         Removes the icon from the toolbar if the plugin is deactivated.
         """
         self.iface.removeToolBarIcon(self.action)
+        self.iface.removePluginMenu("&Load ESDL-file...", self.action)
         del self.action
 
     def run(self):

@@ -46,6 +46,8 @@ def create_feature(asset, attributes):
         fet.setGeometry( QgsGeometry.fromPolylineXY( [QgsPointXY(p.lon, p.lat) for p in geom.point] ) )
     elif type(geom).__name__ == "Polygon":
         fet.setGeometry( QgsGeometry.fromPolygonXY( [[QgsPointXY(p.lon, p.lat) for p in geom.exterior.point]] ) )
+    elif type(geom).__name__ == "WKT":
+        fet.setGeometry( QgsGeometry.fromWkt( geom.value ) )
         
     attribute_values = [getattr(asset, at, None) for at in attributes]
     if hasattr(asset, "port"):
@@ -64,12 +66,15 @@ def create_layer(type_name, assets):
     """
     # determine geometry type, default is Point
     geomname = type(assets[0].geometry).__name__
+    crs = assets[0].geometry.CRS if assets[0].geometry.CRS else 'EPSG:4326'
     if geomname == "Line":
-        geomtype = "Linestring?crs=EPSG:4326"
+        geomtype = "Linestring?crs=%s" % crs 
     elif geomname == "Polygon":
-        geomtype = "Polygon?crs=EPSG:4326"
+        geomtype = "Polygon?crs=%s" % crs 
+    elif geomname == 'WKT':
+        geomtype = "%s?crs=%s" % (assets[0].geometry.value.split("(")[0], crs)
     else:
-        geomtype = "Point?crs=EPSG:4326"
+        geomtype = "Point?crs=%s" % crs 
                 
     # create layer
     vl = QgsVectorLayer(geomtype, type_name, "memory")
